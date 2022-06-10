@@ -7,6 +7,14 @@
       "b": 200,
       "a": 255,
       "radius": 7
+    },
+    {
+      "item": "minecraft:apple",
+      "r": 128,
+      "g": 0,
+      "b": 128,
+      "a": 255,
+      "radius": 7
     }
   ]
 }

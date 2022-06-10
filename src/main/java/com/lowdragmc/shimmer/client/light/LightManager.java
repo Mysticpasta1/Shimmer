@@ -17,8 +17,11 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -235,9 +238,14 @@ public enum LightManager {
 
     private final Map<Block, BiFunction<BlockState, BlockPos, ColorPointLight.Template>> BLOCK_MAP = Maps.newHashMap();
     private final Map<Fluid, ColorPointLight.Template> FLUID_MAP = Maps.newHashMap();
+    private final Map<Item, ColorPointLight.Template> ITEM_MAP = Maps.newHashMap();
 
     public boolean isBlockHasLight(Block block, FluidState fluidState) {
         return BLOCK_MAP.containsKey(block) || (!fluidState.isEmpty() && FLUID_MAP.containsKey(fluidState.getType()));
+    }
+
+    public boolean isItemHasLight(Item item) {
+       return ITEM_MAP.containsKey(item);
     }
 
     @Nullable
@@ -260,6 +268,15 @@ public enum LightManager {
         return template == null ? null : new ColorPointLight(blockpos, template);
     }
 
+    @Nullable
+    public ColorPointLight getItemStackLight(BlockPos blockpos, ItemStack itemStack) {
+        ColorPointLight.Template template = ITEM_MAP.get(itemStack.getItem());
+        if (template == null && !itemStack.isEmpty()) {
+            template = ITEM_MAP.get(itemStack.getItem());
+        }
+        return template == null ? null : new ColorPointLight(blockpos, template);
+    }
+
     /**
      * register colored light for a block.
      * @param block block
@@ -278,6 +295,11 @@ public enum LightManager {
     public void registerFluidLight(Fluid fluid, int color, float radius) {
         ColorPointLight.Template template = new ColorPointLight.Template(radius, color);
         FLUID_MAP.put(fluid, template);
+    }
+
+    public void registerItemLight(Item item, int color, float radius) {
+        ColorPointLight.Template template = new ColorPointLight.Template(radius, color);
+        ITEM_MAP.put(item, template);
     }
 
     public void loadConfig() {
@@ -304,12 +326,21 @@ public enum LightManager {
                     if (ff != null) {
                         registerFluidLight(ff, (a << 24) | (r << 16) | (g << 8) | b, jsonObj.get("radius").getAsFloat());
                     }
+                } else if (jsonObj.has("item")) {
+                    Item ii = ForgeRegistries.ITEMS.getValue(new ResourceLocation(jsonObj.get("item").getAsString()));
+                    int a = JsonUtils.getIntOr("a", jsonObj, 0);
+                    int r = JsonUtils.getIntOr("r", jsonObj, 0);
+                    int g = JsonUtils.getIntOr("g", jsonObj, 0);
+                    int b = JsonUtils.getIntOr("b", jsonObj, 0);
+                    if (ii != null) {
+                        registerItemLight(ii, (a << 24) | (r << 16) | (g << 8) | b, jsonObj.get("radius").getAsFloat());
+                    }
                 }
             }
         }
     }
 
-    public int getLight(BlockGetter instance, BlockPos pPos) {
+    public int getLight(BlockGetter instance, BlockPos pPos, Item item) {
         BlockState blockState = instance.getBlockState(pPos);
         FluidState fluidState = blockState.getFluidState();
         int light = 0;
@@ -320,6 +351,16 @@ public enum LightManager {
             }
             if (template != null) {
                 light = (int) template.radius;
+            }
+        }
+        if(isItemHasLight(item)) {
+            ColorPointLight.Template template1 = ITEM_MAP.getOrDefault(item, null);
+            if(template1 == null) {
+                template1 = ITEM_MAP.get(item);
+            }
+
+            if(template1 != null) {
+                light = (int) template1.radius;
             }
         }
         for (ColorPointLight colorPointLight : lights) {

@@ -20,6 +20,7 @@ public class ShimmerMod {
         DistExecutor.unsafeRunForDist(() -> ClientProxy::new, () -> CommonProxy::new);
     }
 
+    public static boolean isBiomeLightingLoaded() {return ModList.get().isLoaded("biomelighting");}
     public static boolean isRubidiumLoaded() {
         return ModList.get().isLoaded("rubidium");
     }

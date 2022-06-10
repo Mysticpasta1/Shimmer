@@ -37,11 +37,16 @@ public class FileUtility {
 
     public static JsonElement loadJson(File file) {
         try {
-            if (!file.isFile()) return null;
-            Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
-            JsonElement json = jsonParser.parse(new JsonReader(reader));
-            reader.close();
-            return json;
+            if (!file.exists() && !file.isFile()) return null;
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            if (br.readLine() == null) {
+                System.out.println("No errors, and file empty");
+            } else {
+                Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
+                JsonElement json = jsonParser.parse(new JsonReader(reader));
+                reader.close();
+                return json;
+            }
         } catch (Exception ignored) {
         }
         return null;

@@ -119,6 +119,9 @@ repositories {
     maven {
         url 'https://cfa2.cursemaven.com'
     }
+    maven {
+        url "https://jitpack.io"
+    }
 }
 
 dependencies {
@@ -126,6 +129,9 @@ dependencies {
 
     // Rubidium
     compileOnly fg.deobf("curse.maven:rubidium-574856:3749094")
+
+    //Biome Lighting
+    compileOnly fg.deobf("com.github.Waterpicker:biomelighting:1.18.2-forge-data-SNAPSHOT")
 
     if (System.getProperty('idea.sync.active') != 'true') {
         annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
