@@ -22,7 +22,6 @@
   ],
   "mixins": [
     "BlockLightEngineMixin",
-    "LayerLightEngineMixin",
     "rubidium.BlockRendererMixin",
     "rubidium.ChunkRenderRebuildTaskMixin",
     "rubidium.RenderSectionManagerAccessor",

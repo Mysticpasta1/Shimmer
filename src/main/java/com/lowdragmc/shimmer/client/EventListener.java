@@ -5,12 +5,18 @@ import com.lowdragmc.shimmer.client.light.LightManager;
 import com.lowdragmc.shimmer.client.postprocessing.PostProcessing;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author KilaBash
@@ -42,5 +48,25 @@ public class EventListener {
                             LightManager.clear();
                             return 1;
                         })));
+    }
+
+    public static Map<BlockPos, ItemEntity> itemEntityHashMap = new HashMap<>();
+
+    @SubscribeEvent
+    public static void onEntityJoinWorldEvent(EntityJoinWorldEvent event) {
+        if (event.getEntity() instanceof ItemEntity itemEntity) {
+            BlockPos blockPos = new BlockPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ());
+            if (itemEntity.isAlive()) {
+                if (LightManager.INSTANCE.isItemHasLight(itemEntity.getItem().getItem())) {
+                    if (itemEntityHashMap.containsKey(blockPos)) {
+                        itemEntityHashMap.put(blockPos, itemEntity);
+                    }
+                }
+            } else {
+                if (itemEntityHashMap.containsKey(blockPos)) {
+                    itemEntityHashMap.remove(new BlockPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ()), itemEntity);
+                }
+            }
+        }
     }
 }
