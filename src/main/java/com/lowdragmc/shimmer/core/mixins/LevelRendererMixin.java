@@ -1,8 +1,9 @@
 package com.lowdragmc.shimmer.core.mixins;
 
+import com.lowdragmc.shimmer.client.EventListener;
 import com.lowdragmc.shimmer.client.light.ColorPointLight;
-import com.lowdragmc.shimmer.client.postprocessing.PostProcessing;
 import com.lowdragmc.shimmer.client.light.LightManager;
+import com.lowdragmc.shimmer.client.postprocessing.PostProcessing;
 import com.lowdragmc.shimmer.core.IRenderChunk;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Matrix4f;
@@ -13,7 +14,11 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.opengl.GL30;
 import org.spongepowered.asm.mixin.Final;
@@ -22,6 +27,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
 import java.nio.FloatBuffer;
@@ -109,4 +115,18 @@ public abstract class LevelRendererMixin {
         LightManager.INSTANCE.renderLevelPost();
     }
 
+    @Inject(method = "getLightColor(Lnet/minecraft/world/level/BlockAndTintGetter;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;)I", at = @At("TAIL"), cancellable = true)
+    private static void getLightingColor(BlockAndTintGetter pLevel, BlockState pState, BlockPos pPos, CallbackInfoReturnable<Integer> cir) {
+
+        ColorPointLight itemLight = null;
+        ItemEntity itemEntity = EventListener.itemEntityHashMap.get(pPos);
+        if(itemEntity != null) {
+            if (LightManager.INSTANCE.isItemHasLight(itemEntity.getItem().getItem())) {
+                itemLight = LightManager.INSTANCE.getItemStackLight(pPos, itemEntity.getItem());
+            }
+        }
+        if(itemLight != null) {
+            cir.setReturnValue(itemLight.getColor((int) itemLight.r, (int) itemLight.g, (int) itemLight.b, (int) itemLight.a));
+        }
+    }
 }

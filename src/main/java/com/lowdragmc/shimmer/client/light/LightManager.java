@@ -21,7 +21,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -340,7 +339,7 @@ public enum LightManager {
         }
     }
 
-    public int getLight(BlockGetter instance, BlockPos pPos, Item item) {
+    public int getLight(BlockGetter instance, BlockPos pPos) {
         BlockState blockState = instance.getBlockState(pPos);
         FluidState fluidState = blockState.getFluidState();
         int light = 0;
@@ -353,6 +352,18 @@ public enum LightManager {
                 light = (int) template.radius;
             }
         }
+        for (ColorPointLight colorPointLight : lights) {
+            double dist = pPos.distToCenterSqr(colorPointLight.x, colorPointLight.y, colorPointLight.z);
+            double r2 = colorPointLight.radius * colorPointLight.radius;
+            if (dist < r2) {
+                light = (int) Math.max(Math.sqrt(r2) - Math.sqrt(dist), light);
+            }
+        }
+        return light;
+    }
+
+    public int getItemLight(Item item, BlockPos pPos) {
+        int light = 0;
         if(isItemHasLight(item)) {
             ColorPointLight.Template template1 = ITEM_MAP.getOrDefault(item, null);
             if(template1 == null) {

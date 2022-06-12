@@ -1,21 +1,29 @@
 package com.lowdragmc.shimmer.client;
 
+import com.google.common.collect.ImmutableList;
 import com.lowdragmc.shimmer.ShimmerMod;
+import com.lowdragmc.shimmer.client.light.ColorPointLight;
 import com.lowdragmc.shimmer.client.light.LightManager;
 import com.lowdragmc.shimmer.client.postprocessing.PostProcessing;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.EntityLeaveWorldEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -51,22 +59,64 @@ public class EventListener {
     }
 
     public static Map<BlockPos, ItemEntity> itemEntityHashMap = new HashMap<>();
+    public static ImmutableList.Builder<ColorPointLight> lights;
+    private static ColorPointLight light2;
 
     @SubscribeEvent
     public static void onEntityJoinWorldEvent(EntityJoinWorldEvent event) {
-        if (event.getEntity() instanceof ItemEntity itemEntity) {
-            BlockPos blockPos = new BlockPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ());
-            if (itemEntity.isAlive()) {
+        Player player = Minecraft.getInstance().player;
+        if (player != null) {
+            BlockPos blockPos1 = new BlockPos(player.getBlockX(), player.getBlockY(), player.getBlockZ());
+            AABB aabb = new AABB(blockPos1.offset(-15, -15, -15), blockPos1.offset(15, 15, 15));
+            List<ItemEntity> itemEntityList = event.getWorld().getEntitiesOfClass(ItemEntity.class, aabb, itemEntity -> true);
+            for (ItemEntity itemEntity : itemEntityList) {
+                BlockPos blockPos = new BlockPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ());
                 if (LightManager.INSTANCE.isItemHasLight(itemEntity.getItem().getItem())) {
-                    if (itemEntityHashMap.containsKey(blockPos)) {
-                        itemEntityHashMap.put(blockPos, itemEntity);
+                    itemEntityHashMap.put(blockPos, itemEntity);
+                    ItemEntity itemEntity1 = EventListener.itemEntityHashMap.get(blockPos);
+                    if (itemEntity1 != null) {
+                        if (LightManager.INSTANCE.isItemHasLight(itemEntity1.getItem().getItem())) {
+                            light2 = LightManager.INSTANCE.getItemStackLight(blockPos, itemEntity.getItem());
+                            if (light2 != null) {
+                                lights.add(light2);
+                                light2.update();
+                            }
+                            BlockState blockState = event.getWorld().getBlockState(blockPos1);
+                            Minecraft.getInstance().levelRenderer.setBlockDirty(blockPos1, blockState, blockState);
+                        }
                     }
-                }
-            } else {
-                if (itemEntityHashMap.containsKey(blockPos)) {
-                    itemEntityHashMap.remove(new BlockPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ()), itemEntity);
                 }
             }
         }
     }
+
+    @SubscribeEvent
+    public static void onWorldTick(TickEvent.WorldTickEvent event) {
+        if (light2 != null) {
+            light2.update();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onEntityLeaveWorldEvent(EntityLeaveWorldEvent event){
+        Player player = Minecraft.getInstance().player;
+        if (player != null) {
+            BlockPos blockPos1 = new BlockPos(player.getBlockX(), player.getBlockY(), player.getBlockZ());
+            AABB aabb = new AABB(blockPos1.offset(-15, -15, -15), blockPos1.offset(15, 15, 15));
+            List<ItemEntity> itemEntityList = event.getWorld().getEntitiesOfClass(ItemEntity.class, aabb, itemEntity -> true);
+            for (ItemEntity itemEntity : itemEntityList) {
+                BlockPos blockPos = new BlockPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ());
+                if (itemEntityHashMap.containsKey(blockPos)) {
+                    itemEntityHashMap.remove(new BlockPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ()), itemEntity);
+                }
+                if(light2 != null) {
+                    light2.remove();
+                    light2.update();
+                }
+                BlockState blockState = event.getWorld().getBlockState(blockPos1);
+                Minecraft.getInstance().levelRenderer.setBlockDirty(blockPos1, blockState, blockState);
+            }
+        }
+    }
 }
+

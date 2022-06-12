@@ -4,7 +4,6 @@ import com.lowdragmc.shimmer.client.EventListener;
 import com.lowdragmc.shimmer.client.light.LightManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.lighting.BlockLightEngine;
@@ -23,15 +22,27 @@ public abstract class BlockLightEngineMixin {
     @Redirect(method = "getLightEmission", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/BlockGetter;getLightEmission(Lnet/minecraft/core/BlockPos;)I"))
     private int injectResize(BlockGetter instance, BlockPos pPos) {
 
-        ItemStack item = ItemStack.EMPTY;
+        int light2 = 0;
 
         ItemEntity itemEntity = EventListener.itemEntityHashMap.get(pPos);
         if(itemEntity != null) {
-            item = itemEntity.getItem();
+            ItemStack item = itemEntity.getItem();
+            light2 = LightManager.INSTANCE.getItemLight(item.getItem(), pPos);
         }
 
-        int light = LightManager.INSTANCE.getLight(instance, pPos, item.getItem());
-        return light > 0 ? light : instance.getLightEmission(pPos);
+        int light = LightManager.INSTANCE.getLight(instance, pPos);
+
+
+
+        if(light > 0) {
+            return light;
+        }
+
+        if(light2 > 0) {
+            return light2;
+        }
+
+        return instance.getLightEmission(pPos);
     }
 
 }

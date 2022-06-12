@@ -1,6 +1,7 @@
 package com.lowdragmc.shimmer.core.mixins.rubidium;
 
 import com.google.common.collect.ImmutableList;
+import com.lowdragmc.shimmer.client.EventListener;
 import com.lowdragmc.shimmer.client.light.ColorPointLight;
 import com.lowdragmc.shimmer.client.light.LightManager;
 import com.lowdragmc.shimmer.core.IRenderChunk;
@@ -11,6 +12,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTas
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import org.spongepowered.asm.mixin.Final;
@@ -29,7 +31,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ChunkRenderRebuildTask.class)
 public abstract class ChunkRenderRebuildTaskMixin {
     @Shadow @Final private RenderSection render;
-    ImmutableList.Builder<ColorPointLight> lights;
 
     @Redirect(method = "performBuild",
             at = @At(
@@ -38,12 +39,14 @@ public abstract class ChunkRenderRebuildTaskMixin {
             remap = false
             )
     private BlockState injectCompile(WorldSlice instance, int x, int y, int z) {
+        BlockPos pPos = new BlockPos(x, y, z);
         BlockState blockstate = instance.getBlockState(x, y, z);
         FluidState fluidstate = blockstate.getFluidState();
+
         if (LightManager.INSTANCE.isBlockHasLight(blockstate.getBlock(), fluidstate)) {
             ColorPointLight light = LightManager.INSTANCE.getBlockStateLight(instance, new BlockPos(x, y, z), blockstate, fluidstate);
             if (light != null) {
-                lights.add(light);
+                EventListener.lights.add(light);
             }
         }
         return blockstate;
@@ -53,7 +56,7 @@ public abstract class ChunkRenderRebuildTaskMixin {
     private void injectCompilePre(ChunkBuildContext buildContext,
                                   CancellationSource cancellationSource,
                                   CallbackInfoReturnable<ChunkBuildResult> cir) {
-        lights = ImmutableList.builder();
+        EventListener.lights = ImmutableList.builder();
     }
 
     @Inject(method = "performBuild", at = @At(value = "RETURN"), remap = false)
@@ -61,7 +64,9 @@ public abstract class ChunkRenderRebuildTaskMixin {
                                    CancellationSource cancellationSource,
                                    CallbackInfoReturnable<ChunkBuildResult> cir) {
         if (this.render instanceof IRenderChunk renderChunk) {
-            renderChunk.setShimmerLights(lights.build());
+            if(EventListener.lights != null) {
+                renderChunk.setShimmerLights(EventListener.lights.build());
+            }
         }
     }
 }

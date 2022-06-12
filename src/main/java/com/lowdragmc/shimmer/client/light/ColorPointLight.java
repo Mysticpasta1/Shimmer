@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
+import java.awt.*;
 import java.nio.FloatBuffer;
 
 /**
@@ -48,6 +49,10 @@ public class ColorPointLight {
         r = (((color >> 16) & 0xff) / 255f);
         g = (((color >> 8) & 0xff) / 255f);
         b = (((color) & 0xff) / 255f);
+    }
+
+    public int getColor(int r, int g, int b, int a) {
+        return ((a & 0xFF) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | ((b & 0xFF));
     }
 
     public void setColor(float r, float g, float b, float a) {
