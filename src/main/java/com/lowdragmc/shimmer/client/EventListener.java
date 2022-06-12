@@ -10,7 +10,6 @@ import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -61,6 +60,7 @@ public class EventListener {
     public static Map<BlockPos, ItemEntity> itemEntityHashMap = new HashMap<>();
     public static ImmutableList.Builder<ColorPointLight> lights;
     private static ColorPointLight light2;
+    public static int light = 0;
 
     @SubscribeEvent
     public static void onEntityJoinWorldEvent(EntityJoinWorldEvent event) {
@@ -81,8 +81,6 @@ public class EventListener {
                                 lights.add(light2);
                                 light2.update();
                             }
-                            BlockState blockState = event.getWorld().getBlockState(blockPos1);
-                            Minecraft.getInstance().levelRenderer.setBlockDirty(blockPos1, blockState, blockState);
                         }
                     }
                 }
@@ -92,6 +90,20 @@ public class EventListener {
 
     @SubscribeEvent
     public static void onWorldTick(TickEvent.WorldTickEvent event) {
+        int light1 = 0;
+        ColorPointLight lightStack1 = null;
+        Player player = Minecraft.getInstance().player;
+        if(player != null) {
+            BlockPos blockPos1 = new BlockPos(player.getBlockX(), player.getBlockY(), player.getBlockZ());
+            AABB aabb = new AABB(blockPos1.offset(-15, -15, -15), blockPos1.offset(15, 15, 15));
+            List<ItemEntity> itemEntityList = event.world.getEntitiesOfClass(ItemEntity.class, aabb, itemEntity -> true);
+            for (ItemEntity itemEntity : itemEntityList) {
+                if(itemEntity != null) {
+                light1 = LightManager.INSTANCE.getItemLight(itemEntity.getItem().getItem(), blockPos1);
+                }
+            }
+        }
+        light = light1;
         if (light2 != null) {
             light2.update();
         }
@@ -113,8 +125,6 @@ public class EventListener {
                     light2.remove();
                     light2.update();
                 }
-                BlockState blockState = event.getWorld().getBlockState(blockPos1);
-                Minecraft.getInstance().levelRenderer.setBlockDirty(blockPos1, blockState, blockState);
             }
         }
     }

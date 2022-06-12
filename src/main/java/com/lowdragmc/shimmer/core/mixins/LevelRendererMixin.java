@@ -114,19 +114,4 @@ public abstract class LevelRendererMixin {
     private void injectRenderLevelPost(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera pCamera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
         LightManager.INSTANCE.renderLevelPost();
     }
-
-    @Inject(method = "getLightColor(Lnet/minecraft/world/level/BlockAndTintGetter;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;)I", at = @At("TAIL"), cancellable = true)
-    private static void getLightingColor(BlockAndTintGetter pLevel, BlockState pState, BlockPos pPos, CallbackInfoReturnable<Integer> cir) {
-
-        ColorPointLight itemLight = null;
-        ItemEntity itemEntity = EventListener.itemEntityHashMap.get(pPos);
-        if(itemEntity != null) {
-            if (LightManager.INSTANCE.isItemHasLight(itemEntity.getItem().getItem())) {
-                itemLight = LightManager.INSTANCE.getItemStackLight(pPos, itemEntity.getItem());
-            }
-        }
-        if(itemLight != null) {
-            cir.setReturnValue(itemLight.getColor((int) itemLight.r, (int) itemLight.g, (int) itemLight.b, (int) itemLight.a));
-        }
-    }
 }

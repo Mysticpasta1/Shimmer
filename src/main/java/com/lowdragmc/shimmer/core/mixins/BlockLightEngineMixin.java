@@ -2,6 +2,7 @@ package com.lowdragmc.shimmer.core.mixins;
 
 import com.lowdragmc.shimmer.client.EventListener;
 import com.lowdragmc.shimmer.client.light.LightManager;
+import jdk.jfr.Event;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -22,17 +23,14 @@ public abstract class BlockLightEngineMixin {
     @Redirect(method = "getLightEmission", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/BlockGetter;getLightEmission(Lnet/minecraft/core/BlockPos;)I"))
     private int injectResize(BlockGetter instance, BlockPos pPos) {
 
+
         int light2 = 0;
 
-        ItemEntity itemEntity = EventListener.itemEntityHashMap.get(pPos);
-        if(itemEntity != null) {
-            ItemStack item = itemEntity.getItem();
-            light2 = LightManager.INSTANCE.getItemLight(item.getItem(), pPos);
+        if(EventListener.light != 0) {
+            light2 = EventListener.light;
         }
 
         int light = LightManager.INSTANCE.getLight(instance, pPos);
-
-
 
         if(light > 0) {
             return light;
