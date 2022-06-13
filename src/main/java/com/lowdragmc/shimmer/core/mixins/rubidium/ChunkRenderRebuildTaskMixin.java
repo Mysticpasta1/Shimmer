@@ -30,6 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(ChunkRenderRebuildTask.class)
 public abstract class ChunkRenderRebuildTaskMixin {
+    private static ImmutableList.Builder<ColorPointLight> lights;
     @Shadow @Final private RenderSection render;
 
     @Redirect(method = "performBuild",
@@ -42,6 +43,16 @@ public abstract class ChunkRenderRebuildTaskMixin {
         BlockPos pPos = new BlockPos(x, y, z);
         BlockState blockstate = instance.getBlockState(x, y, z);
         FluidState fluidstate = blockstate.getFluidState();
+
+        ItemEntity itemEntity = EventListener.itemEntityHashMap.get(pPos);
+        if(itemEntity != null) {
+            ColorPointLight light2 = LightManager.INSTANCE.getItemStackLight(pPos, itemEntity.getItem());
+            if(light2 != null) {
+                lights.add(light2);
+                light2.setPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ());
+                light2.update();
+            }
+        }
 
         if (LightManager.INSTANCE.isBlockHasLight(blockstate.getBlock(), fluidstate)) {
             ColorPointLight light = LightManager.INSTANCE.getBlockStateLight(instance, new BlockPos(x, y, z), blockstate, fluidstate);
@@ -56,7 +67,7 @@ public abstract class ChunkRenderRebuildTaskMixin {
     private void injectCompilePre(ChunkBuildContext buildContext,
                                   CancellationSource cancellationSource,
                                   CallbackInfoReturnable<ChunkBuildResult> cir) {
-        EventListener.lights = ImmutableList.builder();
+        lights = ImmutableList.builder();
     }
 
     @Inject(method = "performBuild", at = @At(value = "RETURN"), remap = false)
@@ -65,7 +76,7 @@ public abstract class ChunkRenderRebuildTaskMixin {
                                    CallbackInfoReturnable<ChunkBuildResult> cir) {
         if (this.render instanceof IRenderChunk renderChunk) {
             if(EventListener.lights != null) {
-                renderChunk.setShimmerLights(EventListener.lights.build());
+                renderChunk.setShimmerLights(lights.build());
             }
         }
     }

@@ -8,8 +8,12 @@ import com.lowdragmc.shimmer.client.postprocessing.PostProcessing;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -77,10 +81,6 @@ public class EventListener {
                     if (itemEntity1 != null) {
                         if (LightManager.INSTANCE.isItemHasLight(itemEntity1.getItem().getItem())) {
                             light2 = LightManager.INSTANCE.getItemStackLight(blockPos, itemEntity.getItem());
-                            if (light2 != null) {
-                                lights.add(light2);
-                                light2.update();
-                            }
                         }
                     }
                 }
@@ -99,14 +99,12 @@ public class EventListener {
             List<ItemEntity> itemEntityList = event.world.getEntitiesOfClass(ItemEntity.class, aabb, itemEntity -> true);
             for (ItemEntity itemEntity : itemEntityList) {
                 if(itemEntity != null) {
-                light1 = LightManager.INSTANCE.getItemLight(itemEntity.getItem().getItem(), blockPos1);
+                    light1 = LightManager.INSTANCE.getItemLight(itemEntity.getItem().getItem(), blockPos1);
                 }
             }
         }
         light = light1;
-        if (light2 != null) {
-            light2.update();
-        }
+
     }
 
     @SubscribeEvent
@@ -120,10 +118,7 @@ public class EventListener {
                 BlockPos blockPos = new BlockPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ());
                 if (itemEntityHashMap.containsKey(blockPos)) {
                     itemEntityHashMap.remove(new BlockPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ()), itemEntity);
-                }
-                if(light2 != null) {
                     light2.remove();
-                    light2.update();
                 }
             }
         }

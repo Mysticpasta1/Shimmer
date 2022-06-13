@@ -261,7 +261,7 @@ public enum LightManager {
             return null;
         }
         ColorPointLight.Template template = BLOCK_MAP.getOrDefault(blockstate.getBlock(), (s,p) -> null).apply(blockstate,blockpos);
-        if (template == null && !fluidstate.isEmpty()){
+        if (template == null && !fluidstate.isEmpty()) {
             template = FLUID_MAP.get(fluidstate.getType());
         }
         return template == null ? null : new ColorPointLight(blockpos, template);

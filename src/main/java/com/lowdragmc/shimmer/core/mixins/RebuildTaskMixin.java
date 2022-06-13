@@ -10,7 +10,6 @@ import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.chunk.RenderChunkRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
@@ -31,6 +30,7 @@ import java.util.Set;
  */
 @Mixin(targets = {"net/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk$RebuildTask"})
 public abstract class RebuildTaskMixin {
+    private static ImmutableList.Builder<ColorPointLight> lights;
     @Shadow(aliases = {"this$1", "f_112859_"}) @Final ChunkRenderDispatcher.RenderChunk this$1;
 
     @Redirect(method = "compile",
@@ -41,10 +41,20 @@ public abstract class RebuildTaskMixin {
         BlockState blockstate = instance.getBlockState(pPos);
         FluidState fluidstate = blockstate.getFluidState();
 
+        ItemEntity itemEntity = EventListener.itemEntityHashMap.get(pPos);
+        if(itemEntity != null) {
+            ColorPointLight light2 = LightManager.INSTANCE.getItemStackLight(pPos, itemEntity.getItem());
+            if(light2 != null) {
+                lights.add(light2);
+                light2.setPos(itemEntity.getBlockX(), itemEntity.getBlockY(), itemEntity.getBlockZ());
+                light2.update();
+            }
+        }
+
         if (LightManager.INSTANCE.isBlockHasLight(blockstate.getBlock(), fluidstate)) {
             ColorPointLight light = LightManager.INSTANCE.getBlockStateLight(instance, pPos, blockstate, fluidstate);
             if (light != null) {
-                EventListener.lights.add(light);
+                lights.add(light);
             }
         }
 
@@ -53,15 +63,13 @@ public abstract class RebuildTaskMixin {
 
     @Inject(method = "compile", at = @At(value = "HEAD"))
     private void injectCompilePre(float pX, float pY, float pZ, ChunkRenderDispatcher.CompiledChunk pCompiledChunk, ChunkBufferBuilderPack pBuffers, CallbackInfoReturnable<Set<BlockEntity>> cir) {
-        EventListener.lights = ImmutableList.builder();
+        lights = ImmutableList.builder();
     }
 
     @Inject(method = "compile", at = @At(value = "RETURN"))
     private void injectCompilePost(float pX, float pY, float pZ, ChunkRenderDispatcher.CompiledChunk pCompiledChunk, ChunkBufferBuilderPack pBuffers, CallbackInfoReturnable<Set<BlockEntity>> cir) {
         if (this$1 instanceof IRenderChunk) {
-            if(EventListener.lights != null) {
-                ((IRenderChunk) this$1).setShimmerLights(EventListener.lights.build());
-            }
+            ((IRenderChunk) this$1).setShimmerLights(lights.build());
         }
     }
 }
